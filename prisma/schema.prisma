@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum StartupStatus {
+  ACTIVE
+  ACQUIRED
+  DEAD
+  STEALTH
+}
+
+enum PricingModel {
+  FREE
+  FREEMIUM
+  PAID
+  OPEN_SOURCE
+  ENTERPRISE
+  UNKNOWN
+}
+
+enum SignalType {
+  PRODUCT_HUNT_LAUNCH
+  GITHUB_STARS_SPIKE
+  TRAFFIC_SPIKE
+  FUNDING_DETECTED
+  PRICING_CHANGE
+  HIRING_SIGNAL
+  FEATURE_UPDATE
+  GROWTH
+}
+
+// ─── Auth (NextAuth / Auth.js) ────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  watchlist     WatchlistItem[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Core Domain ──────────────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String   @default("#6366f1")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  startups    Startup[]
+}
+
+model Tag {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  slug      String       @unique
+  createdAt DateTime     @default(now())
+
+  startups  StartupTag[]
+}
+
+model Startup {
+  id               String        @id @default(cuid())
+  slug             String        @unique
+  name             String
+  shortDescription String
+  description      String        @db.Text
+  website          String?
+  logoUrl          String?
+  launchDate       DateTime?
+  status           StartupStatus @default(ACTIVE)
+  pricingModel     PricingModel  @default(UNKNOWN)
+  trendingScore    Float         @default(0)
+  categoryId       String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  category         Category?         @relation(fields: [categoryId], references: [id])
+  tags             StartupTag[]
+  signals          Signal[]
+  watchlistItems   WatchlistItem[]
+  pricingSnapshots PricingSnapshot[]
+  competitorsA     CompetitorRelation[] @relation("CompetitorA")
+  competitorsB     CompetitorRelation[] @relation("CompetitorB")
+
+  @@index([slug])
+  @@index([trendingScore])
+  @@index([status])
+  @@index([categoryId])
+}
+
+model StartupTag {
+  startupId String
+  tagId     String
+
+  startup   Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([startupId, tagId])
+}
+
+model Signal {
+  id          String     @id @default(cuid())
+  startupId   String
+  type        SignalType
+  title       String
+  description String?    @db.Text
+  sourceUrl   String?
+  weight      Float      @default(1.0)
+  occurredAt  DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+
+  startup     Startup    @relation(fields: [startupId], references: [id], onDelete: Cascade)
+
+  @@index([startupId])
+  @@index([occurredAt])
+  @@index([type])
+}
+
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  startupId String
+  createdAt DateTime @default(now())
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startup   Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, startupId])
+  @@index([userId])
+}
+
+model CompetitorRelation {
+  id          String  @id @default(cuid())
+  startupAId  String
+  startupBId  String
+  note        String?
+
+  startupA    Startup @relation("CompetitorA", fields: [startupAId], references: [id], onDelete: Cascade)
+  startupB    Startup @relation("CompetitorB", fields: [startupBId], references: [id], onDelete: Cascade)
+
+  @@unique([startupAId, startupBId])
+}
+
+model PricingSnapshot {
+  id        String      @id @default(cuid())
+  startupId String
+  model     PricingModel
+  priceUsd  Float?
+  planName  String?
+  notes     String?
+  recordedAt DateTime   @default(now())
+
+  startup   Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+
+  @@index([startupId])
+}
