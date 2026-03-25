@@ -5,6 +5,8 @@ import type { Prisma, PricingModel, StartupStatus } from "@prisma/client";
 const startupInclude = {
   category: true,
   tags: { include: { tag: true } },
+  // Fetch only the most recent signal so StartupTable can show "Latest Signal"
+  signals: { orderBy: { occurredAt: "desc" as const }, take: 1 },
   _count: { select: { watchlistItems: true, signals: true } },
 } satisfies Prisma.StartupInclude;
 

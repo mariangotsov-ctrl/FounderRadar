@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { CreateSignalForm } from "@/components/admin/CreateSignalForm";
 import { SignalBadge } from "@/components/signals/SignalBadge";
-import { formatRelativeDate, formatScore } from "@/lib/utils";
+import { formatRelativeDate } from "@/lib/utils";
 import Link from "next/link";
 
 export const metadata: Metadata = { title: "Manage Signals" };

@@ -4,10 +4,13 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/register", "/api/auth"];
 
-export default auth(function middleware(req: NextRequest & { auth: { user?: { role?: string } } | null }) {
+// auth() uses JWT only (no PrismaAdapter) — safe to run in this context.
+export default auth(function proxy(
+  req: NextRequest & { auth: { user?: { role?: string } } | null }
+) {
   const { pathname } = req.nextUrl;
 
-  // Allow public paths
+  // Allow public paths through without auth check
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
@@ -15,11 +18,11 @@ export default auth(function middleware(req: NextRequest & { auth: { user?: { ro
   // Redirect unauthenticated users to login
   if (!req.auth) {
     const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set("callbackUrl", encodeURIComponent(pathname));
     return NextResponse.redirect(loginUrl);
   }
 
-  // Admin-only routes
+  // Admin-only routes — redirect non-admins to dashboard
   if (pathname.startsWith("/admin")) {
     if (req.auth.user?.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -31,6 +34,7 @@ export default auth(function middleware(req: NextRequest & { auth: { user?: { ro
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)",
+    // Skip Next.js internals and all static files
+    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)",
   ],
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useRef, useTransition } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Category } from "@prisma/client";
-import { PricingModel } from "@prisma/client";
 import { PRICING_MODEL_LABELS } from "@/lib/utils";
 
 interface StartupFiltersProps {
@@ -25,6 +24,7 @@ export function StartupFilters({ categories }: StartupFiltersProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const q = searchParams.get("q") ?? "";
   const category = searchParams.get("category") ?? "";
@@ -47,7 +47,14 @@ export function StartupFilters({ categories }: StartupFiltersProps) {
     [router, pathname, searchParams]
   );
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => updateParam("q", val), 350);
+  };
+
   const clearAll = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     startTransition(() => {
       router.push(pathname);
     });
@@ -64,36 +71,42 @@ export function StartupFilters({ categories }: StartupFiltersProps) {
           placeholder="Search startups..."
           className="pl-9"
           defaultValue={q}
-          onChange={(e) => {
-            const val = e.target.value;
-            const timeout = setTimeout(() => updateParam("q", val), 350);
-            return () => clearTimeout(timeout);
-          }}
+          onChange={handleSearchChange}
         />
       </div>
 
       {/* Category */}
-      <Select value={category || "all"} onValueChange={(v) => updateParam("category", v === "all" ? "" : v)}>
+      <Select
+        value={category || "all"}
+        onValueChange={(v) => updateParam("category", v === "all" ? "" : v)}
+      >
         <SelectTrigger className="w-full sm:w-44">
           <SelectValue placeholder="All categories" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All categories</SelectItem>
           {categories.map((cat) => (
-            <SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>
+            <SelectItem key={cat.id} value={cat.slug}>
+              {cat.name}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
       {/* Pricing */}
-      <Select value={pricingModel || "all"} onValueChange={(v) => updateParam("pricingModel", v === "all" ? "" : v)}>
+      <Select
+        value={pricingModel || "all"}
+        onValueChange={(v) => updateParam("pricingModel", v === "all" ? "" : v)}
+      >
         <SelectTrigger className="w-full sm:w-40">
           <SelectValue placeholder="All pricing" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All pricing</SelectItem>
           {Object.entries(PRICING_MODEL_LABELS).map(([value, label]) => (
-            <SelectItem key={value} value={value}>{label}</SelectItem>
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -111,7 +124,12 @@ export function StartupFilters({ categories }: StartupFiltersProps) {
       </Select>
 
       {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={clearAll} className="flex-shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearAll}
+          className="flex-shrink-0"
+        >
           <X className="h-4 w-4 mr-1" /> Clear
         </Button>
       )}
