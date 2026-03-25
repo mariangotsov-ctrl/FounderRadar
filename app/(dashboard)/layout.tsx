@@ -1,3 +1,6 @@
+// All dashboard pages are user-specific and session-gated — never statically render
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { DashboardShell } from "@/components/layout/DashboardShell";

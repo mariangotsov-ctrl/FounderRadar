@@ -1,3 +1,6 @@
+// All admin pages are session-gated and role-checked — never statically render
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { DashboardShell } from "@/components/layout/DashboardShell";
