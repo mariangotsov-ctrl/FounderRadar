@@ -3,12 +3,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getStartupBySlug } from "@/lib/queries/startups";
+import { getStartupBySlug, getScoreBreakdown } from "@/lib/queries/startups";
 import { isInWatchlist } from "@/lib/queries/watchlist";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { SignalBadge } from "@/components/signals/SignalBadge";
 import { TrendingScoreChart } from "@/components/charts/TrendingScoreChart";
 import { StartupCard } from "@/components/startups/StartupCard";
+import { ScoreBreakdownPanel } from "@/components/startups/ScoreBreakdownPanel";
 import {
   PRICING_MODEL_LABELS,
   STATUS_COLORS,
@@ -53,9 +54,10 @@ export default async function StartupDetailPage({
 
   if (!startup) notFound();
 
-  const watched = session
-    ? await isInWatchlist(session.user.id, startup.id)
-    : false;
+  const [watched, scoreBreakdown] = await Promise.all([
+    session ? isInWatchlist(session.user.id, startup.id) : Promise.resolve(false),
+    getScoreBreakdown(startup.id),
+  ]);
 
   const competitors: StartupWithRelations[] = [
     ...startup.competitorsA.map((r) => r.startupB),
@@ -173,6 +175,9 @@ export default async function StartupDetailPage({
           <TrendingScoreChart signals={startup.signals} />
         </div>
       </div>
+
+      {/* Score breakdown */}
+      <ScoreBreakdownPanel breakdown={scoreBreakdown} />
 
       {/* Signals */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-4">

@@ -86,6 +86,22 @@ export const STATUS_COLORS: Record<StartupStatus, string> = {
   STEALTH: "bg-gray-100 text-gray-800",
 };
 
+/** Tailwind badge classes keyed by score band */
+export function scoreColor(score: number): string {
+  if (score >= 75) return "text-green-700 bg-green-50";
+  if (score >= 50) return "text-indigo-700 bg-indigo-50";
+  if (score >= 25) return "text-amber-700 bg-amber-50";
+  return "text-gray-500 bg-gray-100";
+}
+
+/** Hex fill colour for the progress bar in score visualisations */
+export function scoreBarColor(score: number): string {
+  if (score >= 75) return "#15803d"; // green-700
+  if (score >= 50) return "#4338ca"; // indigo-700
+  if (score >= 25) return "#b45309"; // amber-700
+  return "#9ca3af";                  // gray-400
+}
+
 export const SIGNAL_WEIGHTS: Record<SignalType, number> = {
   FUNDING_DETECTED: 10.0,
   PRODUCT_HUNT_LAUNCH: 7.0,

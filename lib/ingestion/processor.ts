@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { slugify, SIGNAL_WEIGHTS } from "@/lib/utils";
+import { recalculateTrendingScore } from "@/lib/queries/startups";
 import type { RawGitHubRepo, RawProductHuntPost } from "./types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -16,23 +17,6 @@ async function ensureUniqueSlug(name: string): Promise<string> {
     slug = `${base}-${i++}`;
   }
   return slug;
-}
-
-/**
- * Recomputes trendingScore for a startup using exponential decay over all
- * its signals: score = Σ(weight × e^(−0.05 × daysSince))
- */
-async function recalculateTrendingScore(startupId: string): Promise<void> {
-  const signals = await db.signal.findMany({
-    where: { startupId },
-    select: { weight: true, occurredAt: true },
-  });
-  const now = Date.now();
-  const score = signals.reduce((acc, s) => {
-    const daysSince = (now - s.occurredAt.getTime()) / (1000 * 60 * 60 * 24);
-    return acc + s.weight * Math.exp(-0.05 * daysSince);
-  }, 0);
-  await db.startup.update({ where: { id: startupId }, data: { trendingScore: score } });
 }
 
 // ─── GitHub ───────────────────────────────────────────────────────────────────

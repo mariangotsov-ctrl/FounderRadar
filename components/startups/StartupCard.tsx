@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { StartupWithRelations } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { PRICING_MODEL_LABELS, STATUS_COLORS, formatScore } from "@/lib/utils";
+import { PRICING_MODEL_LABELS, STATUS_COLORS, formatScore, scoreColor } from "@/lib/utils";
 import { TrendingUp, Globe } from "lucide-react";
 
 interface StartupCardProps {
@@ -37,7 +37,7 @@ export function StartupCard({ startup }: StartupCardProps) {
               <span className="text-xs text-gray-500">{startup.category.name}</span>
             )}
           </div>
-          <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-full flex-shrink-0">
+          <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${scoreColor(startup.trendingScore)}`}>
             <TrendingUp className="h-3 w-3" />
             {formatScore(startup.trendingScore)}
           </div>

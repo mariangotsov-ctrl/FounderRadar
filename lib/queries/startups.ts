@@ -1,4 +1,6 @@
 import { db } from "@/lib/db";
+import { computeTrendingScore, computeScoreBreakdown } from "@/lib/scoring";
+import type { ScoreBreakdown } from "@/lib/scoring";
 import type { StartupFilters, PaginatedResult, StartupWithRelations, StartupWithCompetitors } from "@/types";
 import type { Prisma, PricingModel, StartupStatus } from "@prisma/client";
 
@@ -129,23 +131,48 @@ export async function getNewStartupsThisWeek(): Promise<number> {
 }
 
 export async function recalculateTrendingScore(startupId: string): Promise<void> {
-  const signals = await db.signal.findMany({
-    where: { startupId },
-    select: { weight: true, occurredAt: true },
+  const [signals, startup] = await Promise.all([
+    db.signal.findMany({
+      where: { startupId },
+      select: { type: true, weight: true, occurredAt: true, title: true },
+    }),
+    db.startup.findUnique({
+      where: { id: startupId },
+      select: { launchDate: true, createdAt: true },
+    }),
+  ]);
+
+  if (!startup) return;
+
+  const score = computeTrendingScore({
+    signals,
+    launchDate: startup.launchDate,
+    createdAt: startup.createdAt,
   });
-
-  const LAMBDA = 0.05;
-  const now = Date.now();
-
-  const score = signals.reduce((sum, signal) => {
-    const daysSince =
-      (now - signal.occurredAt.getTime()) / (1000 * 60 * 60 * 24);
-    const decay = Math.exp(-LAMBDA * daysSince);
-    return sum + signal.weight * decay;
-  }, 0);
 
   await db.startup.update({
     where: { id: startupId },
-    data: { trendingScore: Math.round(score * 100) / 100 },
+    data: { trendingScore: score },
+  });
+}
+
+export async function getScoreBreakdown(startupId: string): Promise<ScoreBreakdown> {
+  const [signals, startup] = await Promise.all([
+    db.signal.findMany({
+      where: { startupId },
+      select: { type: true, weight: true, occurredAt: true, title: true },
+    }),
+    db.startup.findUnique({
+      where: { id: startupId },
+      select: { launchDate: true, createdAt: true },
+    }),
+  ]);
+
+  if (!startup) return { total: 0, activity: 0, volume: 0, recency: 0, stars: 0 };
+
+  return computeScoreBreakdown({
+    signals,
+    launchDate: startup.launchDate,
+    createdAt: startup.createdAt,
   });
 }

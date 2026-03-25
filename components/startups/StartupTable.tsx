@@ -17,6 +17,8 @@ import {
   STATUS_LABELS,
   formatScore,
   formatDate,
+  scoreColor,
+  scoreBarColor,
 } from "@/lib/utils";
 import { TrendingUp, ExternalLink } from "lucide-react";
 
@@ -83,12 +85,25 @@ const columns = [
   }),
   columnHelper.accessor("trendingScore", {
     header: "Score",
-    cell: (info) => (
-      <div className="flex items-center gap-1 text-amber-600 font-semibold">
-        <TrendingUp className="h-3.5 w-3.5" />
-        {formatScore(info.getValue())}
-      </div>
-    ),
+    cell: (info) => {
+      const score = info.getValue();
+      return (
+        <div className="flex items-center gap-2 min-w-[80px]">
+          <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.min(score, 100)}%`,
+                backgroundColor: scoreBarColor(score),
+              }}
+            />
+          </div>
+          <span className={`text-xs font-semibold tabular-nums px-1.5 py-0.5 rounded ${scoreColor(score)}`}>
+            {formatScore(score)}
+          </span>
+        </div>
+      );
+    },
   }),
   columnHelper.accessor("signals", {
     header: "Latest Signal",
