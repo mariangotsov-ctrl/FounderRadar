@@ -213,3 +213,19 @@ model PricingSnapshot {
 
   @@index([startupId])
 }
+
+// ─── Ingestion ─────────────────────────────────────────────────────────────────
+
+model IngestionRun {
+  id          String    @id @default(cuid())
+  source      String    // "github" | "producthunt"
+  status      String    // "success" | "error"
+  newStartups Int       @default(0)
+  newSignals  Int       @default(0)
+  errors      String[]
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+
+  @@index([source])
+  @@index([startedAt])
+}

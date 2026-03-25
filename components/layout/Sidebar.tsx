@@ -10,6 +10,7 @@ import {
   Bookmark,
   Settings,
   ShieldCheck,
+  RefreshCw,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -76,19 +77,28 @@ export function Sidebar({ isAdmin, onClose }: SidebarProps) {
             <div className="pt-4 pb-1 px-3">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Admin</p>
             </div>
-            <Link
-              href="/admin"
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                pathname.startsWith("/admin")
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              )}
-            >
-              <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-              Admin Panel
-            </Link>
+            {[
+              { href: "/admin", label: "Admin Panel", icon: ShieldCheck, exact: true },
+              { href: "/admin/ingestion", label: "Ingestion", icon: RefreshCw, exact: false },
+            ].map(({ href, label, icon: Icon, exact }) => {
+              const active = exact ? pathname === href : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    active
+                      ? "bg-indigo-50 text-indigo-600"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  {label}
+                </Link>
+              );
+            })}
           </>
         )}
       </nav>

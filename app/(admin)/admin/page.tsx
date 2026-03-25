@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Rocket, Layers, Tag, Zap, Users, GitMerge } from "lucide-react";
+import { Rocket, Layers, Tag, Zap, Users, GitMerge, RefreshCw } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin Panel" };
 
@@ -18,12 +18,15 @@ export default async function AdminDashboardPage() {
     db.competitorRelation.count(),
   ]);
 
+  const ingestionRuns = await db.ingestionRun.count();
+
   const adminLinks = [
     { href: "/admin/startups", label: "Startups", icon: Rocket, count: startups, desc: "Create, edit & manage startups" },
     { href: "/admin/categories", label: "Categories", icon: Layers, count: categories, desc: "Manage startup categories" },
     { href: "/admin/tags", label: "Tags", icon: Tag, count: tags, desc: "Manage startup tags" },
     { href: "/admin/signals", label: "Signals", icon: Zap, count: signals, desc: "Add signals & activity" },
     { href: "/admin/competitors", label: "Competitors", icon: GitMerge, count: competitors, desc: "Define competitor relations" },
+    { href: "/admin/ingestion", label: "Ingestion", icon: RefreshCw, count: ingestionRuns, desc: "Pull data from GitHub & Product Hunt" },
   ];
 
   return (
